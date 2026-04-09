@@ -1,15 +1,12 @@
 Feature: Full system integration tests
 
   Scenario: Create a user, profile, and orders successfully
-    Given I have a user payload with name "Alice" and email "alice@example.com"
+    Given I have a user payload with name "mike" and email "mike@example.com"
     When I create the user via the API
     Then the user should exist in the database with the correct name and email
-    When I create a profile for the user with bio "Hello, I'm Alice"
-    Then the profile should exist in the database with the correct user_id and bio
-    When I create two orders for the user:
-      | item_name | price |
-      | Laptop    | 1200  |
-      | Mouse     | 50    |
+    When I create a profile for the user with bio "Hello, I'm mike"
+    Then the profile should exist in the database with the correct user_id and bio "Hello, I'm mike"
+    When I create two orders for the user "Laptop,1200" and "Mouse,50"
     Then the orders should exist in the database with the correct user_id, item_name, and price
     When I fetch the user details via the API
     Then the API response should include the profile and all orders

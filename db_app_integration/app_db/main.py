@@ -67,6 +67,16 @@ def create_user_profile(profile:UserWithRelations, db:Session=Depends(get_db)):
 
     return profile
 
+@app.get("/profiles/{user_id}", response_model=ProfileResponse)
+def get_profile_details_by_user_id(user_id:int, db:Session = Depends(get_db)):
+    user_exist = get_user_by_id(db, UserById(id=user_id))
+    if not user_exist:
+        raise HTTPException(status_code=404, detail="User not exists")
+    profile = get_profile_by_user_id_db(db, UserById(id=user_id))
+    if not profile:
+        raise HTTPException(status_code=404, detail="profile does not exist")
+    return profile
+
 
 #Order
 @app.post("/orders", response_model=OrderResponse)
@@ -81,4 +91,14 @@ def create_order_for_user(order:OrderCreate ,db:Session=Depends(get_db)):
 
     return order
 
-# Base.metadata.create_all(bind=engine)
+@app.get("/orders/{user_id}", response_model=list[OrderResponse])
+def get_order_details_by_user_id(user_id, db:Session = Depends(get_db)):
+    user_exist = get_user_by_id(db, UserById(id=user_id))
+    if not user_exist:
+        raise HTTPException(status_code=404, detail="User not exists")
+    orders = get_orders_by_user_id(db, UserById(id=user_id))
+    if not orders:
+        raise HTTPException(status_code=404, detail="order does not exist")
+    return orders
+
+Base.metadata.create_all(bind=engine)

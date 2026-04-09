@@ -1,7 +1,7 @@
 from sqlalchemy import select, insert, update, delete, or_
 from app_db.schemas.user import *
 from app_db.db.models.user import User
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 
 def create_user_db(session:Session, user:UserCreate):

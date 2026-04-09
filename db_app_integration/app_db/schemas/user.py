@@ -1,5 +1,8 @@
 from pydantic import BaseModel
 
+from app_db.schemas.order import OrderResponse
+from app_db.schemas.profile import ProfileResponse
+
 class UserByName(BaseModel):
     name:str
 

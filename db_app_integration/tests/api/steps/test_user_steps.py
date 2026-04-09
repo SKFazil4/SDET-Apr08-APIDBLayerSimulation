@@ -18,7 +18,7 @@ def send_post_request(client:TestClient, context:dict, path:str):
 
 @then(parsers.parse('the response status code should be {status_code:d}'))
 def check_status_code(context:dict, status_code:int):
-    assert context.get('response').status_code == status_code
+    assert context['response'].status_code == status_code
 
 
 @then(parsers.parse('the response should contain user name "{name}" and email "{email}"'))
