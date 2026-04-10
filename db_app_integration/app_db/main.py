@@ -49,6 +49,8 @@ def get_user_details(user_id:int, db:Session=Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not exists")
     return user_exist
 
+# @app.delete("")
+
 
 #Profile
 @app.post("/profiles", response_model=ProfileResponse)
