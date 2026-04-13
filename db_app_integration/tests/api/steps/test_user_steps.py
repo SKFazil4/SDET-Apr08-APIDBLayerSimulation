@@ -36,12 +36,11 @@ def check_response_body(context:dict, name:str, email:str):
 
 #Scenario 2
 
-@given(parsers.parse('a user already exists with name "{name}"'))
-def give_user_already_exist(client:TestClient, name:str):
-    payload = {"name":name, "email":f"{name}@example.com"}
+@given(parsers.parse('a user already exists with name "{name}" and email "{email}"'))
+def give_user_already_exist(client:TestClient, name:str, email:str):
+    payload = {"name":name, "email":email}
     response = client.post("/users", json=payload)
     assert response.status_code == 200 or response.status_code == 409
-    #Add an endpoint that gives back the details using username
 
 @when(parsers.parse('I send POST request to "{path}" with name "{name}" and email "{email}"'))
 def when_sent_post_req(client:TestClient, context:dict, path:str, name:str, email:str):
@@ -68,8 +67,9 @@ def given_user_email_already_exists(user_email:str):
 
 #Scenario 4
 @given(parsers.parse('a user exists with ID {user_id:d}'))
-def given_user_id_exist(user_id):
-    pass
+def given_user_id_exist(client:TestClient, user_id:int):
+    user = client.get(f"/users/id/{user_id}")
+    assert user.status_code == 200
 
 @when(parsers.parse('I send GET request to "{path}"'))
 def when_req_sent_by_user_id(client:TestClient, context:dict, path:str):

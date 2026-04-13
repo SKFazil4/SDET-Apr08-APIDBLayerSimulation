@@ -4,8 +4,9 @@ from pytest_bdd import scenarios, parsers, given, when, then
 scenarios("../features/profile.feature")
 
 @given(parsers.parse('a user exists with ID {user_id:d}'))
-def given_user_id_exists(user_id:int):
-    pass
+def given_user_id_exists(client:TestClient, user_id:int):
+    user = client.get(f"/users/id/{user_id}")
+    assert user.status_code == 200
 
 @given(parsers.parse('I have a profile payload with user_id {user_id:d} and bio "{bio_data}"'))
 def given_profile_payload(context:dict, user_id:int, bio_data:str):

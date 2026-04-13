@@ -15,13 +15,13 @@ Feature: Full system integration tests
     Given no user exists with ID 9999
     When I try to create a profile via the API for user ID 9999
     Then the API response should return status code 409
-    And the message should be "User does not exists"
+    And the message should be "User id 9999 does not exists"
 
   Scenario: Fail to create order for non-existing user
     Given no user exists with ID 9999
     When I try to create an order via the API for user ID 9999
     Then the API response should return status code 404
-    And the message should be "User profile does not exists"
+    And the message should be "User does not exists"
 
   Scenario: Retrieve user with profile and orders
     Given a user exists with ID 1

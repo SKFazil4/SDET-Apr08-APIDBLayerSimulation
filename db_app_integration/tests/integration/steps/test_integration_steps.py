@@ -34,7 +34,7 @@ def create_user_api(client:TestClient,context:dict):
 def validate_user_db(db_session: Session, context:dict):
     db = db_session
     user_id = context["user_id"]
-    user = get_user_by_id(db, UserById(id=user_id))
+    user = get_user_by_id_db(db, UserById(id=user_id))
     assert user is not None
     assert user.name == context['user_payload']['name']
     assert user.email == context['user_payload']['email']
@@ -74,7 +74,7 @@ def create_orders_table(client:TestClient, context:dict, item1:str, item2:str):
 def validate_orders_db(db_session:Session, context:dict):
     db = db_session
     user_id = context["user_id"]
-    orders_db = get_orders_by_user_id(db, UserById(id=user_id))
+    orders_db = get_orders_by_user_id_db(db, UserById(id=user_id))
     assert len(orders_db) == len(context['orders'])
     for o_resp, o_db in zip(context['orders'], orders_db):
         assert o_resp['item_name'] == o_db.item_name
@@ -99,7 +99,7 @@ def validate_nested_response(context:dict):
 #Scenario 2
 @given(parsers.parse('no user exists with ID {user_id:d}'))
 def check_user_existence_invalidity(db_session:Session, user_id:int):
-    user = get_user_by_id(db_session, UserById(id=user_id))
+    user = get_user_by_id_db(db_session, UserById(id=user_id))
     assert user is None
 
 @when(parsers.parse('I try to create a profile via the API for user ID {user_id:d}'))
@@ -129,7 +129,7 @@ def create_order_with_invalid_user_id(client: TestClient, context:dict, user_id:
 #Scenario 4
 @given(parsers.parse('a user exists with ID {user_id:d}'))
 def check_user_existing(db_session:Session, user_id:int):
-    user = get_user_by_id(db_session, UserById(id=user_id))
+    user = get_user_by_id_db(db_session, UserById(id=user_id))
     assert user is not None
     assert user.id == user_id
 
@@ -141,18 +141,18 @@ def check_profile_existing(db_session:Session, user_id:int):
 
 @given(parsers.parse('multiple orders exist for user ID {user_id:d}'))
 def check_orders_existing(db_session:Session, user_id:int):
-    orders = get_orders_by_user_id(db_session, UserById(id=user_id))
+    orders = get_orders_by_user_id_db(db_session, UserById(id=user_id))
     assert orders is not None
     for order in orders:
         assert order.user_id == user_id
 
 @when(parsers.parse('I fetch user details via the API for user ID {user_id:d}'))
 def fetch_user_details_api(client: TestClient, context:dict, user_id:int):
-    response = client.get(f"/users/{user_id}")
+    response = client.get(f"/users/id/{user_id}")
     context["user_response"] = response
-    response = client.get(f"/profiles/{user_id}")
+    response = client.get(f"/profiles/userid/{user_id}")
     context["profile_response"] = response
-    response = client.get(f"/orders/{user_id}")
+    response = client.get(f"/orders/userid/{user_id}")
     context["order_response"] = response
 
 @then("the API response should include the correct user info")

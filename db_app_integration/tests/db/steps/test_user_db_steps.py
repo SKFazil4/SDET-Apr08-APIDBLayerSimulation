@@ -59,7 +59,7 @@ def given_user_exists(user_id:int):
 
 @when(parsers.parse('I query the users table for user ID {user_id:d}'))
 def when_query_user_by_id(db_session:Session, context:dict, user_id:int):
-    user_data = get_user_by_id(db_session, UserById(id=user_id))
+    user_data = get_user_by_id_db(db_session, UserById(id=user_id))
     context["user_data"] = user_data
 
 @then(parsers.parse('the returned record should have user ID {user_id:d} the correct name and email'))

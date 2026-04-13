@@ -1,17 +1,16 @@
 from pytest_bdd import given, when, then, parsers, scenarios
-
-from app_db.db.models.order import Order
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 #Repository
-from app_db.repository.user_repo import get_user_by_id
 from app_db.repository.profile_repo import *
 from app_db.repository.order_repo import *
 
-#Schemas
-from app_db.schemas.user import UserWithRelations
+#Model
+from app_db.db.models.order import Order
 
+#Schema
+from app_db.schemas.order import *
 
 scenarios("../features/orders.feature")
 
@@ -66,7 +65,7 @@ def given_multi_orders(user_id:int):
 
 @when(parsers.parse('I query the orders table for user ID {user_id:d}'))
 def when_query_user_orders(db_session:Session, context:dict, user_id:int):
-    orders = get_orders_by_user_id(db_session, UserById(id=user_id))
+    orders = get_orders_by_user_id_db(db_session, UserById(id=user_id))
     context["orders"] = orders
 
 @then("all orders should be returned correctly")
