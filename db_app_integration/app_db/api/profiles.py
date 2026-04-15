@@ -36,7 +36,7 @@ def create_user_profile(profile:ProfileCreate, db:Session=Depends(get_db)):
 def get_profile_details(db:Session = Depends(get_db)):
     profiles = get_profile_details_db(db)
     if not profiles:
-        raise HTTPException(status_code=404, detail=f"Profiles does not exists")
+        raise HTTPException(status_code=404, detail="Profiles does not exists")
     return profiles
 
 @router.get("/userid/{user_id}", response_model=ProfileResponse, tags=["Profiles - Read"])

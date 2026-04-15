@@ -36,7 +36,7 @@ def create_user(user: UserCreate, db:Session=Depends(get_db)):
 def get_user_details(db:Session=Depends(get_db)):
     user_exist = get_user_details_db(db)
     if not user_exist:
-        raise HTTPException(status_code=404, detail=f"Users does not exists")
+        raise HTTPException(status_code=404, detail="Users does not exists")
     return user_exist
 
 @router.get("/id/{user_id}", response_model=UserResponse, tags=["Users - Read"])

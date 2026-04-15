@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 from pytest_bdd import scenarios, given, when, then, parsers
+from setuptools._distutils.command import clean
+
 from sqlalchemy.orm import Session
 import json
 
@@ -243,7 +245,7 @@ def then_db_should_match_res(db_session:Session, context:dict):
     assert len(profiles_api) == len(profiles_db)
 
 
-#PROFILE APIs
+#PROFILE APIs, DELETE OPERATIONS
 #Scenario 2
 @given(parsers.parse('a profile exists with profile ID {profile_id:d}'))
 def given_profile_exist(db_session:Session, context:dict, profile_id:int):
@@ -324,6 +326,7 @@ def then_db_should_match_api_res(context:dict):
 
 #ORDER APIs
 #Scenario 2
+#Scenario 3
 @given(parsers.parse('an order exists with ID {order_id:d}'))
 def given_order_exist_by_order_id(db_session:Session, context:dict, order_id:int):
     order = get_order_by_order_id_db(db_session, OrderById(id=order_id))
@@ -378,82 +381,203 @@ def then_db_reflect_updated_order(db_session:Session, context:dict):
     assert existing_order.item_name == payload["item_name"]
     assert existing_order.price == payload["price"]
 
+
+#DELETE OPERATIONS
+#Scenario 1
+@when("I delete the profile using profile ID via API")
+def when_profile_deleted_by_profile_id_by_api(context:dict, client:TestClient):
+    profile_id = context["profile_id"]
+    response = client.delete(f"/profiles/profileid/{profile_id}")
+    assert response.json()["response"] == f"Profile with profile Id {profile_id} has been deleted successfully"
+@then("the profile should not exist in the database")
+def then_profile_should_not_exist_in_db(db_session:Session, context:dict):
+    db_session.expire_all()
+    profile_id = context["profile_id"]
+    profile_db_res = get_profile_by_profile_id_db(db_session, ProfileById(id=profile_id))
+    assert profile_db_res is None
+
+
+#DELETE OPERATIONS
 #Scenario 2
+@when("I delete the order via API")
+def when_order_deleted_by_order_id_via_api(client:TestClient, context:dict):
+    order_id = context["order_id"]
+    response = client.delete(f"/orders/orderid/{order_id}")
+    assert response.json()["response"] == f"Order with user Id {order_id} has been deleted successfully"
+@then("the order should not exist in the database")
+def then_order_should_not_exist_in_db(db_session:Session, context:dict):
+    db_session.expire_all()
+    order_id = context["order_id"]
+    order_res_db = get_order_by_order_id_db(db_session, OrderById(id=order_id))
+    assert order_res_db is None
+
+
+#DELETE OPERATIONS
+#Scenario 2
+@given(parsers.parse('a user exists with name "{name}"'))
+def given_user_exists_by_name(db_session:Session, context:dict, name:str):
+    user_res_db = get_user_by_name_db(db_session, UserByName(name=name))
+    assert user_res_db is not None
+    context["user_name"] = name
+@when("I delete the user using name via API")
+def when_user_deleted_using_name_via_api(client:TestClient, context:dict):
+    user_name = context["user_name"]
+    user_res = client.delete(f"/users/name/{user_name}")
+    assert f"User {user_name} has been deleted successfully"
+@then("the user should not exist in the database")
+def then_user_should_not_exist_in_db(db_session:Session, context:dict):
+    db_session.expire_all()
+    user_name = context["user_name"]
+    user_db_res = get_user_by_name_db(db_session, UserByName(name=user_name))
+    assert user_db_res is None
+
+#CASCADE VALIDATION (CRITICAL)
+@given(parsers.parse('a user exists with ID {user_id:d} and with profile and orders'))
+def given_user_exist_with_id_and_with_its_profile_order(db_session:Session, context:dict, user_id:int):
+    context["user_id"]=user_id
+    user_res = get_user_by_id_db(db_session, UserById(id = user_id))
+    assert user_res is not None
+    context["user_name"] = user_res.name
+    profile_res = get_profile_by_user_id_db(db_session, UserById(id = user_id))
+    assert profile_res is not None
+    context["profile_id"] = profile_res.id
+    orders_res = get_orders_by_user_id_db(db_session, UserById(id = user_id))
+    assert orders_res is not None
+@when("I delete the user via the API")
+def when_user_deleted_by_user_id_via_api(client:TestClient, context:dict):
+    user_id = context["user_id"]
+    user_res = client.delete(f"/users/id/{user_id}")
+    assert user_res.json()["response"] == f"User {user_id} has been deleted successfully"
+@then("the orders should not exist in the database")
+def then_orders_should_not_exist_in_db(db_session:Session, context:dict):
+    db_session.expire_all()
+    user_id = context["user_id"]
+    order_res_db = get_orders_by_user_id_db(db_session, UserById(id=user_id))
+    assert len(order_res_db) == 0
+
+
+#NEGATIVE CASES
+#Scenario 1
 @given(parsers.parse('no user exists with ID {user_id:d}'))
-def check_user_existence_invalidity(db_session:Session, user_id:int):
-    user = get_user_by_id_db(db_session, UserById(id=user_id))
+def given_no_user_exist(db_session:Session, context:dict, user_id:int):
+    user = get_user_by_id_db(db_session, UserById(id = user_id))
     assert user is None
+    context["user_id"] = user_id
+@when("I try to create a profile")
+def when_try_to_create_profile(client:TestClient, context:dict):
+    user_id = context["user_id"]
+    payload = {"user_id":user_id, "bio":"Hi I'm good how about you"}
+    profile_res = client.post(f"/profiles", json=payload)
+    context["api_res"] = profile_res
+@then(parsers.parse('the API response should return status code {code:d}'))
+def then_verify_api_res_returns_status_code(context:dict, code:int):
+    api_res = context["api_res"]
+    assert api_res.status_code == code
 
-@when(parsers.parse('I try to create a profile via the API for user ID {user_id:d}'))
-def create_profile_with_invalid_user_id(client: TestClient, context:dict, user_id:int):
-    profile_data = {"user_id":user_id, "bio":"Hi Nice to meet you"}
-    response = client.post('/profiles', json=profile_data)
-    context["response"] = response
 
-@then(parsers.parse('the API response should return status code {status_code:d}'))
-def verify_response_status_code(context:dict, status_code:int):
-    response = context["response"]
-    assert response.status_code == status_code
+#NEGATIVE CASES
+#Scenario 2
+@when("I try to create an order")
+def when_try_to_create_profile(client:TestClient, context:dict):
+    user_id = context["user_id"]
+    payload = {"user_id":user_id, "item_name":"Laptop", "price":55000}
+    order_res = client.post(f"/orders", json=payload)
+    context["api_res"] = order_res
 
-@then(parsers.parse('the message should be "{response_message}"'))
-def verify_response_message(context:dict, response_message:str):
-    response = context["response"]
-    res_msg = response.json()["detail"]
-    assert res_msg == response_message
 
+#NEGATIVE CASES
 #Scenario 3
-@when(parsers.parse('I try to create an order via the API for user ID {user_id:d}'))
-def create_order_with_invalid_user_id(client: TestClient, context:dict, user_id:int):
-    order_data = {"user_id":user_id, "item_name":"Laptop", "price":40000}
-    response = client.post('/orders', json=order_data)
-    context["response"] = response
+@when("I fetch user/profile/order with invalid IDs")
+def when_using_invalid_user_id_details_fetched(client:TestClient, context:dict):
+    user_id = 9999
+    user_res = client.get(f"/users/id/{user_id}")
+    profile_res = client.get(f"/profiles/userid/{user_id}")
+    order_res = client.get(f"/orders/userid/{user_id}")
+    context["user_res"] = user_res
+    context["profile_res"] = profile_res
+    context["order_res"] = order_res
+@then(parsers.parse('the API should return {code:d} responses'))
+def then_api_should_return_status_code(context:dict):
+    user_res = context["user_res"]
+    profile_res = context["profile_res"]
+    order_res = context["order_res"]
+    assert user_res.status_code == 404
+    assert profile_res.status_code == 404
+    assert order_res.status_code == 404
 
-#Scenario 4
+#CONSISTENCY VALIDATION
+@when("I fetch user, profile, and orders via APIs")
+def when_user_profile_order_were_fetch_via_api(client:TestClient, context:dict):
+    user_id = context["user_id"]
+    user_api_res = client.get(f"/users/id/{user_id}")
+    assert user_api_res.status_code == 200
+    profile_api_res = client.get(f"/profiles/userid/{user_id}")
+    assert profile_api_res.status_code == 200
+    orders_api_res = client.get(f"/orders/userid/{user_id}")
+    assert orders_api_res.status_code == 200
+
+    context["user_api_res"] = user_api_res
+    context["profile_api_res"] = profile_api_res
+    context["orders_api_res"] = orders_api_res
+@then("all responses should match database records")
+def then_check_responses_should_match_db(db_session:Session, context:dict):
+    user_id = context["user_id"]
+
+    user_api_res = context["user_api_res"]
+    user_api = user_api_res.json()
+
+    profile_api_res = context["profile_api_res"]
+    profile_api = profile_api_res.json()
+
+    orders_api_res = context["orders_api_res"]
+    orders_api = orders_api_res.json()
+
+    user_db_res = get_user_by_id_db(db_session, UserById(id=user_id))
+    assert user_db_res.id == user_api["id"]
+    assert user_db_res.name == user_api["name"]
+    assert user_db_res.email == user_api["email"]
+
+    profile_db_res = get_profile_by_user_id_db(db_session, UserById(id=user_id))
+    assert profile_db_res.id == profile_api["id"]
+    assert profile_db_res.user_id == profile_api["user_id"]
+    assert profile_db_res.bio == profile_api["bio"]
+
+    orders_db_res = get_orders_by_user_id_db(db_session, UserById(id=user_id))
+    assert len(orders_db_res) == len(orders_api)
+    for order_db, order_api in zip(orders_db_res, orders_api):
+        assert order_db.id == order_api["id"]
+        assert order_db.user_id == order_api["user_id"]
+        assert order_db.item_name == order_api["item_name"]
+        assert order_db.price == order_api["price"]
 
 
-# @given(parsers.parse('a profile exists for user ID {user_id:d}'))
-# def check_profile_existing(db_session:Session, user_id:int):
-#     profile = get_profile_by_user_id_db(db_session, UserById(id=user_id))
-#     assert profile is not None
-#     assert profile.user_id == user_id
+#EMPTY DATA EDGE CASES
+@given("no users, profiles, or orders exist")
+def given_no_user_profile_order_exist(db_session:Session):
+    user_res = get_user_details_db(db_session)
+    assert len(user_res) == 0
+    profile_res = get_profile_details_db(db_session)
+    assert len(profile_res) == 0
+    order_res = get_orders_db(db_session)
+    assert len(order_res) == 0
 
-@given(parsers.parse('multiple orders exist for user ID {user_id:d}'))
-def check_orders_existing(db_session:Session, user_id:int):
-    orders = get_orders_by_user_id_db(db_session, UserById(id=user_id))
-    assert orders is not None
-    for order in orders:
-        assert order.user_id == user_id
+@when("I fetch all users, profiles, and orders")
+def when_fetch_all_users_profiles_orders(client:TestClient, context:dict):
+    user_res = client.get("/users")
+    profile_res = client.get("/profiles")
+    order_res = client.get("/orders")
+    context["user_res"] = user_res
+    context["profile_res"] = profile_res
+    context["order_res"] = order_res
+@then("the API should return appropriate responses or errors")
+def then_api_should_return_appropriate_res_or_error(context:dict):
+    user_res = context["user_res"]
+    profile_res= context["profile_res"]
+    order_res = context["order_res"]
 
-@when(parsers.parse('I fetch user details via the API for user ID {user_id:d}'))
-def fetch_user_details_api(client: TestClient, context:dict, user_id:int):
-    response = client.get(f"/users/id/{user_id}")
-    context["user_response"] = response
-    response = client.get(f"/profiles/userid/{user_id}")
-    context["profile_response"] = response
-    response = client.get(f"/orders/userid/{user_id}")
-    context["order_response"] = response
-
-@then("the API response should include the correct user info")
-def validate_user_details(context:dict):
-    user_response = context["user_response"]
-    user_res_message = user_response.json()
-    status_code = user_response.status_code
-    assert status_code == 200
-    assert isinstance(user_res_message["id"],int)
-
-@then("the response should include the correct profile info")
-def validate_profile_details(context:dict):
-    profile_response = context["profile_response"]
-    profile_res_message = profile_response.json()
-    status_code = profile_response.status_code
-    assert status_code == 200
-    assert isinstance(profile_res_message["bio"],str)
-
-@then("the response should include all orders for the user")
-def validate_order_details(context:dict):
-    order_response = context["order_response"]
-    order_res_message = order_response.json()
-    status_code = order_response.status_code
-    assert status_code == 200
-    for order in order_res_message:
-        assert isinstance(order["item_name"],str)
+    assert user_res.status_code == 404
+    assert user_res.json()["detail"] == "Users does not exists"
+    assert profile_res.status_code == 404
+    assert profile_res.json()["detail"] == "Profiles does not exists"
+    assert order_res.status_code == 404
+    assert order_res.json()["detail"] == "orders does not exist"
