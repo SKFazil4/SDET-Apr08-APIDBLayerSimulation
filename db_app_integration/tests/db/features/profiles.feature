@@ -27,7 +27,7 @@ Feature: Profile Table DB operations
 
   Scenario: Update profile bio
     Given a profile exists for user ID 1
-    When I update the profile bio to "Updated Bio"
+    When I update the profile bio to "Newly updated bio"
     Then the database should reflect the updated bio
 
   Scenario: Delete profile by user ID
@@ -36,6 +36,6 @@ Feature: Profile Table DB operations
     Then the profile should not exist in the database
 
   Scenario: Delete profile by profile ID
-    Given a profile exists with profile ID 1
-    When I delete the profile using profile ID 1
+    Given a profile exists with profile ID 4
+    When I delete the profile using profile ID 4
     Then the profile should not exist in the database

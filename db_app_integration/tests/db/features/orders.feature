@@ -36,6 +36,6 @@ Feature: Order Table DB operations
     Then no orders should exist for that user
 
   Scenario: Delete order by order ID
-    Given an order exists with ID 1
-    When I delete the order using order ID 1
+    Given an order exists with ID 3
+    When I delete the order using order ID 3
     Then the order should not exist in the database
