@@ -2,15 +2,15 @@ Feature: Order API
 
   Scenario: Create order successfully
     Given a user exists with ID 1
-    And I have an order payload with item_name "Laptop" and price 1200
+    And I have an order payload with item_name "Laptop" and price 52500
     When I send POST request to "/orders"
     Then the response status code should be 200
-    And the response should contain item_name "Laptop" and price 1200
+    And the response should contain item_name "Laptop" and price 52500
     And the response should contain user_id 1
 
   Scenario: Fail to create order for non-existing user
     Given no user exists with ID 9999
-    And I have an order payload with item_name "Mouse" and price 50
+    And I have an order payload with item_name "Mouse" and price 590
     When I send POST request to "/orders"
     Then the response status code should be 404
     And the response message should be "User does not exists"
@@ -45,7 +45,7 @@ Feature: Order API
     And the response should contain updated item_name "Tablet" and price 500
 
   Scenario: Fail to update non-existing order
-    When I send PUT request to "/orders/id/9999"
+    When I send PUT request to "/orders/id/9999" with item_name "Tablet" and price 500
     Then the response status code should be 404
     And the response message should be "Order does not exists"
 

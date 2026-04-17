@@ -1,6 +1,5 @@
 from fastapi.testclient import TestClient
 from pytest_bdd import scenarios, given, when, then, parsers
-from setuptools._distutils.command import clean
 
 from sqlalchemy.orm import Session
 import json
